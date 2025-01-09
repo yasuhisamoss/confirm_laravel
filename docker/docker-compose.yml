@@ -1,0 +1,80 @@
+#version: '3'
+services:
+  nginx:
+    image: nginx:1.25.0
+    ports:
+      - 8000:80
+    volumes:
+      # ./srcフォルダをコンテナ内の/usr/local/moss_point/mpにマウント
+      - ../:/usr/local/moss_point/mp
+      # ./docker/nginxフォルダをコンテナ内の/etc/nginx/conf.dにマウント
+      - ./docker/nginx:/etc/nginx/conf.d
+    # 依存関係を設定
+    depends_on:
+      - app
+  # Laravel用の設定を書く
+  nginx2:
+    image: nginx:1.25.0
+    ports:
+      - 8001:80
+    volumes:
+      # ./srcフォルダをコンテナ内の/usr/local/moss_point/mpにマウント
+      - ../../mp:/usr/local/moss_point/mp
+      # ./docker/nginxフォルダをコンテナ内の/etc/nginx/conf.dにマウント
+      - ./docker/nginx2:/etc/nginx/conf.d
+    # 依存関係を設定
+    depends_on:
+      - app2
+  # PHP-FPMの定義
+  app:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    # コンテナ内で使用される環境変数を定義
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ../:/usr/local/moss_point/mp
+    # 依存関係を設定
+    depends_on:
+      - mysql
+  # Laravel用の設定を書く
+  app2:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    # コンテナ内で使用される環境変数を定義
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ../:/usr/local/moss_point/mp
+    # 依存関係を設定
+    depends_on:
+      - mysql
+  # MySQLの定義
+  mysql:
+    # MySQL コンテナに使用するイメージを指定
+    image: mysql:8.0
+    # コンテナ内で使用される環境変数を定義
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      # 名前付きボリュームを MySQL コンテナに紐づける
+      - mysqldata:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+      # - ./docker/mysql/sql:/docker-entrypoint-initdb.d
+    ports:
+      - 3306:3306
+volumes:
+  # 名前付きボリュームの作成
+  mysqldata:
+
